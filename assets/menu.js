@@ -1,5 +1,5 @@
-// Een glasbord per klik: het oude zwaait weg, het nieuwe komt binnen.
-// Zonder JS (of met "verminder beweging") staan alle borden gewoon onder of naast elkaar.
+// Alle borden staan als rij in de diepte. Het aangeklikte komt naar voren en licht op.
+// Zonder JS (of met "verminder beweging") staan alle borden gewoon open onder of naast elkaar.
 (function(){
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   document.body.classList.add('js');
@@ -27,34 +27,46 @@
   rail.parentNode.insertBefore(tabs, rail);
 
   var huidig = -1;
-  var timers = [];
+  var timer;
 
   function toon(id){
     var nieuw = borden.findIndex(function(b){ return b.id === id; });
     if (nieuw < 0 || nieuw === huidig) return;
-
-    timers.forEach(clearTimeout); timers = [];
-    borden.forEach(function(b, i){
-      if (i !== huidig && i !== nieuw) b.classList.remove('actief', 'komt', 'gaat');
-    });
-
-    rail.classList.toggle('achteruit', huidig > -1 && nieuw < huidig);
-
-    if (huidig > -1){
-      var oud = borden[huidig];
-      oud.classList.remove('actief', 'komt');
-      oud.classList.add('gaat');
-      timers.push(setTimeout(function(){ oud.classList.remove('gaat'); }, 600));
-    }
-
-    var b = borden[nieuw];
-    b.classList.remove('gaat');
-    b.classList.add('actief', 'komt');
-    timers.push(setTimeout(function(){ b.classList.remove('komt'); }, 1700));
-
-    knoppen.forEach(function(k, i){ k.setAttribute('aria-selected', i === nieuw ? 'true' : 'false'); });
     huidig = nieuw;
+
+    borden.forEach(function(b, i){
+      var o = i - nieuw;
+      b.className = b.className.replace(/\bo[pm]?\d\b/g, '').replace(/\s+/g, ' ').trim();
+      b.classList.add(o === 0 ? 'o0' : (o > 0 ? 'op' : 'om') + Math.min(Math.abs(o), 4));
+      b.classList.remove('komt');
+      if (o === 0){
+        b.removeAttribute('role'); b.removeAttribute('tabindex');
+        void b.offsetWidth; b.classList.add('komt');
+      } else {
+        b.setAttribute('role', 'button'); b.setAttribute('tabindex', '0');
+        b.setAttribute('aria-label', 'Open ' + knoppen[i].textContent);
+      }
+    });
+    clearTimeout(timer);
+    timer = setTimeout(function(){ borden[nieuw].classList.remove('komt'); }, 1800);
+    knoppen.forEach(function(k, i){ k.setAttribute('aria-selected', i === nieuw ? 'true' : 'false'); });
   }
+
+  // Klik op een bord in de rij haalt het naar voren
+  borden.forEach(function(b){
+    b.addEventListener('click', function(){ toon(b.id); });
+    b.addEventListener('keydown', function(e){
+      if (b.classList.contains('o0')) return;
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toon(b.id); }
+    });
+  });
+
+  // Pijltjes links en rechts
+  document.addEventListener('keydown', function(e){
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    var n = huidig + (e.key === 'ArrowRight' ? 1 : -1);
+    if (n >= 0 && n < borden.length) toon(borden[n].id);
+  });
 
   // Links bovenaan de pagina schakelen ook van bord
   document.querySelectorAll('nav a').forEach(function(a){
@@ -63,7 +75,7 @@
       if (borden.some(function(b){ return b.id === id; })){
         e.preventDefault();
         toon(id);
-        rail.scrollIntoView({behavior:'smooth', block:'start'});
+        rail.scrollIntoView({behavior:'smooth', block:'center'});
       }
     });
   });
