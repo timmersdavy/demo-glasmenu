@@ -124,24 +124,39 @@ nav a:hover{color:var(--inkt);background:rgba(255,255,255,.07)}
 }
 .knop:hover{filter:brightness(1.07)}
 
-/* zacht zweven, per paneel ander ritme */
+/* ===== het glas beweegt ===== */
+/* Rail krijgt diepte: de borden staan schuin, als ruiten in een rij. */
+.rail{perspective:1500px;perspective-origin:50% 35%}
+.paneel{transform-style:preserve-3d}
 @media (prefers-reduced-motion:no-preference){
+  /* zacht zweven via 'translate', zodat transform vrij blijft voor het kantelen */
   .paneel{animation:zweef 9s ease-in-out infinite}
   .paneel:nth-child(2n){animation-duration:11s;animation-delay:-3s}
   .paneel:nth-child(3n){animation-duration:13s;animation-delay:-6s}
-  @keyframes zweef{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
-  /* binnenschuiven bij scroll (enkel met JS actief). Geen opacity op het paneel
-     zelf: dat geeft renderglitches in combinatie met backdrop-filter. */
-  .js .paneel{translate:0 30px;transition:translate .7s ease}
-  .js .paneel.in{translate:0 0}
-  .js .item{opacity:0;transition:opacity .5s ease}
-  .js .paneel.in .item{opacity:1}
-  .js .paneel.in .item:nth-child(2){transition-delay:.08s}
-  .js .paneel.in .item:nth-child(3){transition-delay:.16s}
-  .js .paneel.in .item:nth-child(4){transition-delay:.24s}
-  .js .paneel.in .item:nth-child(5){transition-delay:.32s}
-  .js .paneel.in .item:nth-child(6){transition-delay:.4s}
-  .js .paneel.in .item:nth-child(7){transition-delay:.48s}
+  @keyframes zweef{0%,100%{translate:0 0}50%{translate:0 -7px}}
+
+  /* dicht: schuin gekanteld, wazig, tekst uit. Pas na een tik gaat het open. */
+  .js .paneel:not(#praktisch){
+    cursor:pointer;
+    transform-origin:left center;
+    transform:rotateY(-52deg) translateZ(-90px);
+    transition:transform .95s cubic-bezier(.2,.8,.2,1), box-shadow .6s ease, background .6s ease;
+    box-shadow:0 10px 30px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.12);
+  }
+  .js .paneel:not(#praktisch):nth-child(2n){transform-origin:right center;transform:rotateY(52deg) translateZ(-90px)}
+  .js .paneel:not(#praktisch):not(.in):hover{transform:rotateY(-44deg) translateZ(-70px)}
+  .js .paneel:not(#praktisch):nth-child(2n):not(.in):hover{transform:rotateY(44deg) translateZ(-70px)}
+  .js .paneel.in:not(#a):not(#b),.js #praktisch{transform:none}
+  .js .paneel:not(.in) .glas-inhoud{opacity:0;filter:blur(6px);transform:translateY(6px)}
+  .js .glas-inhoud{transition:opacity .7s ease, filter .7s ease, transform .7s ease}
+  /* het scherm 'gaat aan' pas als het glas vlak staat */
+  .js .paneel.in .glas-inhoud{opacity:1;filter:none;transform:none;transition-delay:.55s}
+  .js .paneel.in{box-shadow:0 18px 45px rgba(0,0,0,.35), 0 0 60px rgba(233,179,101,.10), inset 0 1px 0 rgba(255,255,255,.22)}
+  .js .paneel:not(.in):not(#praktisch) h2::after{content:"Tik om te openen";display:block;font-family:var(--tekst);font-size:.82rem;color:var(--inkt-zacht);margin-top:.5rem;letter-spacing:.04em}
+  .js .paneel:not(.in):not(#praktisch):focus-visible{outline:2px solid var(--accent)}
+  /* het open paneel blijft niet meer zweven, zodat je rustig kan lezen */
+  .js .paneel.in{animation:none}
+  .js .item{opacity:1}
 }
 
 /* ===== mobiel: wand wordt stapel ===== */
@@ -149,6 +164,9 @@ nav a:hover{color:var(--inkt);background:rgba(255,255,255,.07)}
   .rail{display:block;overflow:visible;padding:0 1.1rem 1rem}
   .paneel{margin:0 0 1.4rem}
   .paneel{animation:none}
+  .rail{perspective:1000px}
+  .js .paneel:not(#praktisch),.js .paneel:not(#praktisch):nth-child(2n){transform-origin:center top;transform:rotateX(-40deg) translateZ(-40px)}
+  .js .paneel.in:not(#a):not(#b),.js #praktisch{transform:none}
 }
 
 footer{
